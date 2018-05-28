@@ -104,41 +104,33 @@ Q4map
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流呢？
 Q5<-ComPop
 Q5$小計<-as.numeric(Q5$小計)
-Q5$國別<-gsub("中國大陸|大陸地區","中國",Q5$國別)
-Q5$國別[grepl("大韓民國",Q5$國別)]<-"韓國"
-Q5$國別<-gsub("南韓","韓國",Q5$國別)
-Q5$國別<-gsub("澳大利亞","澳洲",Q5$國別)
-Q5$國別<-gsub("德意志聯邦共和國","德國",Q5$國別)
-Q5$國別<-gsub("甘比亞共和國","甘比亞",Q5$國別)
-Q5$國別<-gsub("菲律賓共和國","菲律賓",Q5$國別)
-Q5$國別<-gsub("印度尼西亞共和國","印尼",Q5$國別)
-Q5$國別<-gsub("荷蘭王國","荷蘭",Q5$國別)
-Q5$國別<-gsub("捷克共和國","捷克",Q5$國別)
-Q5$國別[grepl("泰王國",Q5$國別)]<-"泰國"
-Q5$國別<-gsub("俄羅斯聯邦","俄羅斯",Q5$國別)
-Q5$國別<-gsub("西班牙王國","西班牙",Q5$國別)
-Q5$國別<-gsub("新加坡共和國","新加坡",Q5$國別)
-Q5$國別<-gsub("奧地利共和國","奧地利",Q5$國別)
-Q5$國別<-gsub("瑞典王國","瑞典",Q5$國別)
 a<-group_by(Q5,`國別`) %>% 
    summarise(total=sum(小計))
-
+Q5<-full_join(a,code,by="國別")
+Q5<-Q5[order(Q5$total,decreasing = T),]
+Q5[grep("[A-Z]{3}",Q5$ISO,invert=T),]
+Q5$ISO[grep("[A-Z]{3}",Q5$ISO,invert=T)]<-c("CHN","CHN","KOR","KOR","DEU","AUS","THA","SGP","ESP","NLD",
+                                            "CZE","AUT","RUS","SWE","PHL","BEL","IDN","VNM","FIN","ITA")
+Q5<-group_by(Q5,ISO) %>% summarise(total = sum(total,na.rm=T))
 kable(head(Q5[order(Q5$total,decreasing = TRUE),],10))
 
 ### 哪間大學的出國交流學生數最多呢？
-Q6<-group_by(Q5,學校名稱) %>% 
+ComPop$小計<-as.numeric(ComPop$小計)
+Q6<-group_by(ComPop,學校名稱) %>% 
   summarise(total=sum(小計))
 kable(head(Q6[order(Q6$total,decreasing = TRUE),],10))
 
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流條狀圖
-ggplot(data=a)+
-  geom_bar(aes(x=國別,y=total),stat="identity")+
+others2<-c("其他",sum(filter(Q5,total<200)$total))
+Q6b<-rbind(filter(Q5,total>=200),others2)
+Q6b$total<-as.numeric(Q6b$total)
+ggplot(data=Q6b)+
+  geom_bar(aes(x=ISO,y=total),stat="identity")+
   theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5))
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流面量圖
-Q7<-left_join(a,code,by="國別")
-Q7<-left_join(country.map,Q7,by="ISO")
+Q7<-left_join(country.map,Q5,by="ISO")
 Q7[is.na(Q7)]<-0
 Q7map<-ggplot() +
   geom_polygon(data = Q7, 
@@ -176,10 +168,13 @@ Q8map<-ggplot() +
 Q8map
 
 ## 綜合分析
-Q9a<-Q1_105[order(Q1_105$total,decreasing = TRUE),]
+Q1_105a<-data.frame(Statisticscon105$國別,rowSums(Statisticscon105[3:5]))
+names(Q1_105a)<-c("國別","total")
+Q1_105a$total<-as.numeric(Q1_105a$total)
+Q9a<-Q1_105a[order(Q1_105a$total,decreasing = TRUE),]
 names(Q9a)<-c("國別","外國人來台")
 Q9a$國別<-as.character(Q9a$國別)
-Q9a[8,1]<-"韓國"
+Q9a[9,1]<-"韓國"
 Q9b<-IS[order(IS$總人數,decreasing = TRUE),]
 Q9b<-Q9b[,-1]
 names(Q9b)<-c("國別","台灣人出國")

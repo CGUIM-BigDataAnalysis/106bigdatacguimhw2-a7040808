@@ -161,65 +161,80 @@ Q4map
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流呢？
 
 ``` r
-Q5<-ComPop[grep("進",ComPop$學制),]
-Q5$國別<-gsub("中國大陸|大陸地區","中國",Q5$國別)
-Q5$國別[grepl("大韓民國",Q5$國別)]<-"韓國"
-Q5$國別<-gsub("南韓","韓國",Q5$國別)
-Q5$國別<-gsub("澳大利亞","澳洲",Q5$國別)
-Q5$國別<-gsub("德意志聯邦共和國","德國",Q5$國別)
-Q5$國別<-gsub("甘比亞共和國","甘比亞",Q5$國別)
-Q5$國別<-gsub("菲律賓共和國","菲律賓",Q5$國別)
-Q5$國別<-gsub("印度尼西亞共和國","印尼",Q5$國別)
-Q5$國別<-gsub("荷蘭王國","荷蘭",Q5$國別)
-Q5$國別<-gsub("捷克共和國","捷克",Q5$國別)
-Q5$國別[grepl("泰王國",Q5$國別)]<-"泰國"
-Q5$國別<-gsub("俄羅斯聯邦","俄羅斯",Q5$國別)
-Q5$國別<-gsub("西班牙王國","西班牙",Q5$國別)
+Q5<-ComPop
 Q5$小計<-as.numeric(Q5$小計)
-a<-group_by(Q5,國別) %>% 
-  summarise(total=sum(小計))
-kable(head(a[order(a$total,decreasing = TRUE),],10))
+a<-group_by(Q5,`國別`) %>% 
+   summarise(total=sum(小計))
+Q5<-full_join(a,code,by="國別")
+Q5<-Q5[order(Q5$total,decreasing = T),]
+Q5[grep("[A-Z]{3}",Q5$ISO,invert=T),]
 ```
 
-| 國別     |  total|
-|:---------|------:|
-| 中國     |    310|
-| 日本     |    236|
-| 美國     |     54|
-| 韓國     |     33|
-| 加拿大   |     23|
-| 澳洲     |     16|
-| 泰國     |     12|
-| 馬來西亞 |     12|
-| 德國     |     12|
-| 捷克     |      9|
+    ## # A tibble: 75 x 3
+    ##    國別              total ISO  
+    ##    <chr>             <dbl> <chr>
+    ##  1 中國大陸         10429. <NA> 
+    ##  2 大陸地區          5996. <NA> 
+    ##  3 南韓              2498. <NA> 
+    ##  4 大韓民國(南韓)    2131. <NA> 
+    ##  5 德意志聯邦共和國  1458. <NA> 
+    ##  6 澳大利亞           926. <NA> 
+    ##  7 泰王國(泰國)       567. <NA> 
+    ##  8 新加坡共和國       479. <NA> 
+    ##  9 西班牙王國         478. <NA> 
+    ## 10 荷蘭王國           349. <NA> 
+    ## # ... with 65 more rows
+
+``` r
+Q5$ISO[grep("[A-Z]{3}",Q5$ISO,invert=T)]<-c("CHN","CHN","KOR","KOR","DEU","AUS","THA","SGP","ESP","NLD",
+                                            "CZE","AUT","RUS","SWE","PHL","BEL","IDN","VNM","FIN","ITA")
+Q5<-group_by(Q5,ISO) %>% summarise(total = sum(total,na.rm=T))
+kable(head(Q5[order(Q5$total,decreasing = TRUE),],10))
+```
+
+| ISO |  total|
+|:----|------:|
+| CHN |  16621|
+| JPN |  12430|
+| USA |   8916|
+| KOR |   4771|
+| DEU |   3211|
+| FRA |   2415|
+| FXX |   2415|
+| GBR |   1416|
+| ESP |   1282|
+| SGP |   1188|
 
 ### 哪間大學的出國交流學生數最多呢？
 
 ``` r
-Q6<-group_by(Q5,學校名稱) %>% 
+ComPop$小計<-as.numeric(ComPop$小計)
+Q6<-group_by(ComPop,學校名稱) %>% 
   summarise(total=sum(小計))
 kable(head(Q6[order(Q6$total,decreasing = TRUE),],10))
 ```
 
-| 學校名稱         |  total|
-|:-----------------|------:|
-| 國立臺灣海洋大學 |    149|
-| 淡江大學         |     96|
-| 東吳大學         |     53|
-| 輔仁大學         |     38|
-| 國立中興大學     |     31|
-| 國立高雄餐旅大學 |     26|
-| 中華醫事科技大學 |     21|
-| 國立臺灣藝術大學 |     18|
-| 大仁科技大學     |     17|
-| 中國文化大學     |     17|
+| 學校名稱     |  total|
+|:-------------|------:|
+| 國立臺灣大學 |   4719|
+| 淡江大學     |   3794|
+| 國立政治大學 |   3479|
+| 逢甲大學     |   2646|
+| 東海大學     |   1881|
+| 元智大學     |   1864|
+| 國立交通大學 |   1513|
+| 東吳大學     |   1457|
+| 國立成功大學 |   1397|
+| 國立臺北大學 |   1397|
 
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流條狀圖
 
 ``` r
-ggplot(data=a)+
-  geom_bar(aes(x=國別,y=total),stat="identity")+
+others2<-c("其他",sum(filter(Q5,total<200)$total))
+Q6b<-rbind(filter(Q5,total>=200),others2)
+Q6b$total<-as.numeric(Q6b$total)
+ggplot(data=Q6b)+
+  geom_bar(aes(x=ISO,y=total),stat="identity")+
   theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust = 0.5))
 ```
 
@@ -228,8 +243,7 @@ ggplot(data=a)+
 ### 台灣大專院校的學生最喜歡去哪些國家進修交流面量圖
 
 ``` r
-Q7<-left_join(a,code,by="國別")
-Q7<-left_join(country.map,Q7,by="ISO")
+Q7<-left_join(country.map,Q5,by="ISO")
 Q7[is.na(Q7)]<-0
 Q7map<-ggplot() +
   geom_polygon(data = Q7, 
@@ -299,10 +313,13 @@ Q8map
 請問來台讀書與離台讀書的來源國與留學國趨勢是否相同(5分)？想來台灣唸書的境外生，他們的母國也有很多台籍生嗎？請圖文並茂說明你的觀察(10分)。
 
 ``` r
-Q9a<-Q1_105[order(Q1_105$total,decreasing = TRUE),]
+Q1_105a<-data.frame(Statisticscon105$國別,rowSums(Statisticscon105[3:5]))
+names(Q1_105a)<-c("國別","total")
+Q1_105a$total<-as.numeric(Q1_105a$total)
+Q9a<-Q1_105a[order(Q1_105a$total,decreasing = TRUE),]
 names(Q9a)<-c("國別","外國人來台")
 Q9a$國別<-as.character(Q9a$國別)
-Q9a[8,1]<-"韓國"
+Q9a[9,1]<-"韓國"
 Q9b<-IS[order(IS$總人數,decreasing = TRUE),]
 Q9b<-Q9b[,-1]
 names(Q9b)<-c("國別","台灣人出國")
@@ -317,4 +334,4 @@ ggplot(data=Q9)+
 
 ![](InternationalStudents_files/figure-markdown_github/unnamed-chunk-1-1.png)
 
-此圖分別展示出了台灣人出國留學以及外國人來台之情況，由左至右以台灣人出國的人數作為排序。由圖中資訊可知，台灣人主要留學的國家為歐美地區，而來台的外國人主要為東南亞以及東北亞，由此看出趨勢並不相同。若忽略人數相當少的國家來看，兩邊交流人數較平衡的也僅僅是日本而已。
+此圖分別展示出了台灣人出國留學以及外國人來台之情況，由左至右以台灣人出國的人數作為排序。由圖中資訊可知，台灣人主要留學的國家為歐美地區，而來台的外國人主要為東南亞以及東北亞，由此看出趨勢並不相同。
